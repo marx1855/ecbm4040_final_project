@@ -1,11 +1,6 @@
 import numpy as np
 import _pickle as pickle
 import h5py
-
-metadata = {}
-
-
-    
 def get_metadata(filepath):
     f = h5py.File(filepath)
 
@@ -46,7 +41,7 @@ def alter(data):
 def extend_label(data):
     for i in range(0, len(data['label'])):
         data['label'][i].insert(0, len(data['label'][i]))
-        while len(data['label'][i]) < 6:
+        while len(data['label'][i]) <= 6:
             data['label'][i].append(0)
     
     return data
@@ -54,8 +49,8 @@ def extend_label(data):
 def get_digit_border(metadata):
     ret = []
     for i in range(0, len(metadata['label'])):
-        top = min(metadata['top'][i])
-        left = min(metadata['left'][i])
+        top = max(0, min(metadata['top'][i]))
+        left = max(0, min(metadata['left'][i]))
         bot = 0
         right = 0
         for idx in range(len(metadata['top'][i])):
