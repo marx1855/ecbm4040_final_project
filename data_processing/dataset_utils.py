@@ -14,36 +14,40 @@ class dataset:
     def __init__(self):
         self.train_image_path = "../data/train/"
         self.test_image_path = "../data/test/"
-        self.idx = 0
+        self.idx_train = 0
+        self.idx_test = 0
         self.rand_idx_train = np.random.permutation(33402)
         self.rand_idx_test = np.random.permutation(13068)
     def build_batch(self, data, labels, batch_size, is_train, shuffle=False):
-        idx = self.idx
+        
         
         rand_idx_train = self.rand_idx_train
         rand_idx_test = self.rand_idx_test
         
         if shuffle is False:
             if is_train is True:
+                idx = self.idx_train
                 if idx + batch_size > 33402:
                     batch = np.concatenate((data[idx:33402], data[0:idx + batch_size - 33402]), axis = 0)
                     label = np.concatenate((labels[idx:33402], labels[0:idx + batch_size - 33402]), axis = 0)
-                    self.idx = idx + batch_size - 33402
+                    self.idx_train = idx + batch_size - 33402
                 else:
                     batch = data[idx:idx + batch_size]
                     label = labels[idx:idx + batch_size]
-                    self.idx = idx + batch_size
+                    self.idx_train = idx + batch_size
             else:
+                idx = self.idx_test
                 if idx + batch_size > 13068:
                     batch = np.concatenate((data[idx:13068], data[0:idx + batch_size - 13068]), axis = 0)
                     label = np.concatenate((labels[idx:13068], labels[0:idx + batch_size - 13068]), axis = 0)
-                    self.idx = idx + batch_size - 13068
+                    self.idx_test = idx + batch_size - 13068
                 else:
                     batch = data[idx:idx + batch_size]
                     label = labels[idx:idx + batch_size]
-                    self.idx = idx + batch_size
+                    self.idx_test = idx + batch_size
         else:
             if is_train is True:
+                idx = self.idx_train
                 if idx + batch_size > 33402:
                     first_part = rand_idx_train[idx:33402]
                     rand_idx_train = np.random.permutation(33402)
@@ -53,12 +57,13 @@ class dataset:
                     
                     batch = data[mask]
                     label = data[mask]
-                    self.idx = idx + batch_size - 33402
+                    self.idx_train = idx + batch_size - 33402
                 else:
                     batch = data[rand_idx_train[idx:idx + batch_size]]
                     label = labels[rand_idx_train[idx:idx + batch_size]]
-                    self.idx = idx + batch_size
+                    self.idx_train = idx + batch_size
             else:
+                idx = self.idx_test
                 if idx + batch_size > 13068:
                     first_part = rand_idx_test[idx:13068]
                     rand_idx_test = np.random.permutation(13068)
@@ -68,11 +73,11 @@ class dataset:
                     
                     batch = data[mask]
                     label = data[mask]
-                    self.idx = idx + batch_size - 13068
+                    self.idx_test = idx + batch_size - 13068
                 else:
                     batch = data[rand_idx_test[idx:idx + batch_size]]
                     label = labels[rand_idx_test[idx:idx + batch_size]]
-                    self.idx = idx + batch_size
+                    self.idx_test = idx + batch_size
         
         return batch, label
                 
