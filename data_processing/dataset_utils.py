@@ -12,8 +12,8 @@ import json
 
 class dataset:
     def __init__(self):
-        self.train_image_path = "../data/train/"
-        self.test_image_path = "../data/test/"
+        self.train_image_path = "./train/"
+        self.test_image_path = "./test/"
         self.idx_train = 0
         self.idx_test = 0
         self.rand_idx_train = np.random.permutation(33402)
@@ -56,7 +56,7 @@ class dataset:
                     mask = np.concatenate((first_part, second_part), axis = 0)
                     
                     batch = data[mask]
-                    label = data[mask]
+                    label = labels[mask]
                     self.idx_train = idx + batch_size - 33402
                 else:
                     batch = data[rand_idx_train[idx:idx + batch_size]]
@@ -72,14 +72,22 @@ class dataset:
                     mask = np.concatenate((first_part, second_part), axis = 0)
                     
                     batch = data[mask]
-                    label = data[mask]
+                    label = labels[mask]
                     self.idx_test = idx + batch_size - 13068
                 else:
                     batch = data[rand_idx_test[idx:idx + batch_size]]
                     label = labels[rand_idx_test[idx:idx + batch_size]]
                     self.idx_test = idx + batch_size
+
         
-        return batch, label
+        cropped = np.zeros((batch_size, 54, 54, 3))
+        if is_train is True:
+            for i in range(batch_size):
+                rand = np.random.randint(10, size=2)
+                cropped[i] = batch[i, rand[0]:rand[0]+54, rand[1]:rand[1] + 54, :]    
+        else:
+            cropped = batch[:, 5:59, 5:59, :]
+        return cropped, label
                 
                                
         
@@ -90,7 +98,7 @@ class dataset:
         test_data = []
         print ("Generating metadata for training.")
         if not os.path.exists('./metadata_train.json'):
-            metadata = mp.get_metadata('../data/train/digitStruct.mat')
+            metadata = mp.get_metadata('./train/digitStruct.mat')
             with open('metadata_train.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
@@ -106,7 +114,7 @@ class dataset:
 
         print ("Generating metadata for testing.")
         if not os.path.exists('./metadata_test.json'):
-            metadata = mp.get_metadata('../data/test/digitStruct.mat')
+            metadata = mp.get_metadata('./test/digitStruct.mat')
             with open('metadata_test.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
@@ -175,7 +183,7 @@ class dataset:
 
     def load_labels(self):
         if not os.path.exists('./metadata_train.json'):
-            metadata = mp.get_metadata('../data/train/digitStruct.mat')
+            metadata = mp.get_metadata('./train/digitStruct.mat')
             with open('metadata_train.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
@@ -188,7 +196,7 @@ class dataset:
 
         print ("Generating metadata for testing.")
         if not os.path.exists('./metadata_test.json'):
-            metadata = mp.get_metadata('../data/test/digitStruct.mat')
+            metadata = mp.get_metadata('./test/digitStruct.mat')
             with open('metadata_test.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:

@@ -42,7 +42,7 @@ def extend_label(data):
     for i in range(0, len(data['label'])):
         data['label'][i].insert(0, len(data['label'][i]))
         while len(data['label'][i]) <= 6:
-            data['label'][i].append(0)
+            data['label'][i].append(10)
     
     return data
 
