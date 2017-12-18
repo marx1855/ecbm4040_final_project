@@ -24,6 +24,6 @@ Usage
 
 Accuracy and Loss
 -------------------
-![Accuracy and Loss](https://github.com/marx1855/ecbm4040_final_project/master/images/accuracy.png?raw=true)
+![Accuracy and Loss](https://github.com/marx1855/ecbm4040_final_project/master/images/accuracy.png)
 
 
