@@ -1,5 +1,5 @@
 import numpy as np
-import metadata_processing as mp
+import data_processing.metadata_processing as mp
 import tensorflow as tf
 import imageio  
 from skimage import transform 
@@ -12,8 +12,8 @@ import json
 
 class dataset:
     def __init__(self):
-        self.train_image_path = "./train/"
-        self.test_image_path = "./test/"
+        self.train_image_path = "./data/train/"
+        self.test_image_path = "./data/test/"
         self.idx_train = 0
         self.idx_test = 0
         self.rand_idx_train = np.random.permutation(33402)
@@ -97,12 +97,12 @@ class dataset:
         train_data = []
         test_data = []
         print ("Generating metadata for training.")
-        if not os.path.exists('./metadata_train.json'):
-            metadata = mp.get_metadata('./train/digitStruct.mat')
-            with open('metadata_train.json', 'w') as outfile:
+        if not os.path.exists('./data_processing/metadata_train.json'):
+            metadata = mp.get_metadata('./data/train/digitStruct.mat')
+            with open('./data_processing/metadata_train.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
-            metadata = json.load(open('metadata_train.json'))
+            metadata = json.load(open('./data_processing/metadata_train.json'))
 
         meta_train = mp.get_digit_border(metadata)
         print ("Done")
@@ -113,12 +113,12 @@ class dataset:
         print ()
 
         print ("Generating metadata for testing.")
-        if not os.path.exists('./metadata_test.json'):
-            metadata = mp.get_metadata('./test/digitStruct.mat')
-            with open('metadata_test.json', 'w') as outfile:
+        if not os.path.exists('./data_processing/metadata_test.json'):
+            metadata = mp.get_metadata('./data/test/digitStruct.mat')
+            with open('./data_processing/metadata_test.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
-            metadata = json.load(open('metadata_test.json'))
+            metadata = json.load(open('./data_processing/metadata_test.json'))
         meta_test = mp.get_digit_border(metadata)
         print ("Done")
         print ("Load test dataset labels")
@@ -182,12 +182,12 @@ class dataset:
         return train_data, test_data, train_labels, test_labels
 
     def load_labels(self):
-        if not os.path.exists('./metadata_train.json'):
-            metadata = mp.get_metadata('./train/digitStruct.mat')
-            with open('metadata_train.json', 'w') as outfile:
+        if not os.path.exists('./data_processing/metadata_train.json'):
+            metadata = mp.get_metadata('./data/train/digitStruct.mat')
+            with open('./data_processing/metadata_train.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
-            metadata = json.load(open('metadata_train.json'))
+            metadata = json.load(open('./data_processing/metadata_train.json'))
 
 
         metadata = mp.extend_label(metadata)
@@ -195,12 +195,12 @@ class dataset:
         train_labels = np.stack(metadata['label'])    
 
         print ("Generating metadata for testing.")
-        if not os.path.exists('./metadata_test.json'):
-            metadata = mp.get_metadata('./test/digitStruct.mat')
-            with open('metadata_test.json', 'w') as outfile:
+        if not os.path.exists('./data_processing/metadata_test.json'):
+            metadata = mp.get_metadata('./data/test/digitStruct.mat')
+            with open('./data_processing/metadata_test.json', 'w') as outfile:
                 json.dump(metadata, outfile, indent=2)
         else:
-            metadata = json.load(open('metadata_test.json'))
+            metadata = json.load(open('./data_processing/metadata_test.json'))
         metadata = mp.extend_label(metadata)
         test_labels = np.stack(metadata['label'])
 
