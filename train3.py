@@ -3,31 +3,52 @@ from datetime import datetime
 import time
 import tensorflow as tf
 
-from donkey import Donkey
 from model_new import Model
+import dataset_utils as du
+
+#ds = du.dataset()
+#train_data, test_data, train_labels, test_labels = ds.load_image([54,54])
 
 
 #import dataset_utils as du
-def evaluate(path_to_checkpoint, path_to_tfrecords_file, num_examples, global_step):
+def evaluate(path_to_checkpoint, ds, val_data, val_labels, num_examples, global_step):
 
     batch_size = 128
-    num_batches = num_examples / batch_size
+    num_batches = num_examples // batch_size
     needs_include_length = False
 
     with tf.Graph().as_default():
+        '''
         image_batch, length_batch, digits_batch = Donkey.build_batch(path_to_tfrecords_file,
                                                                      num_examples=num_examples,
                                                                      batch_size=batch_size,
                                                                      shuffled=False)
         length_logits, digits_logits = Model.layers(image_batch, drop_rate=0.0)
+        '''
+        with tf.name_scope('test_inputs'):
+            xs = tf.placeholder(shape=[None, 54, 54, 3], dtype=tf.float32)
+            ys1 = tf.placeholder(shape=[None, ], dtype=tf.int32)
+            ys2 = tf.placeholder(shape=[None, 5], dtype=tf.int32)
+        '''
+        image_batch, label = ds.build_batch(val_data, val_labels, batch_size, is_train=False, shuffle=False)
+        length_batch = label[:, 0]
+        digits_batch = label[:, 1:6]
+	
+        image_batch = tf.convert_to_tensor(image_batch, dtype=tf.float32)
+        length_batch = tf.convert_to_tensor(length_batch, dtype=tf.int32)
+        digits_batch = tf.convert_to_tensor(digits_batch, dtype=tf.int32)	
+        '''
+        length_logits, digits_logits = Model.layers(xs, drop_rate=0.3)
+ 
+
         length_predictions = tf.argmax(length_logits, axis=1)
         digits_predictions = tf.argmax(digits_logits, axis=2)
 
         if needs_include_length:
-            labels = tf.concat([tf.reshape(length_batch, [-1, 1]), digits_batch], axis=1)
+            labels = tf.concat([tf.reshape(ys1, [-1, 1]), ys2], axis=1)
             predictions = tf.concat([tf.reshape(length_predictions, [-1, 1]), digits_predictions], axis=1)
         else:
-            labels = digits_batch
+            labels = ys2
             predictions = digits_predictions
 
         labels_string = tf.reduce_join(tf.as_string(labels), axis=1)
@@ -38,7 +59,7 @@ def evaluate(path_to_checkpoint, path_to_tfrecords_file, num_examples, global_st
             predictions=predictions_string
         )
 
-        tf.summary.image('image', image_batch)
+        tf.summary.image('image', xs)
         tf.summary.scalar('accuracy', accuracy)
         tf.summary.histogram('variables',
                              tf.concat([tf.reshape(var, [-1]) for var in tf.trainable_variables()], axis=0))
@@ -53,22 +74,27 @@ def evaluate(path_to_checkpoint, path_to_tfrecords_file, num_examples, global_st
             restorer.restore(sess, path_to_checkpoint)
 
             for _ in range(num_batches):
-                sess.run(update_accuracy)
-            summary_writer = tf.summary.FileWriter('log/eval')
-            accuracy_val, summary_val = sess.run([accuracy, summary])
-            summary_writer.add_summary(summary_val, global_step=global_step)
+                image_batch, label = ds.build_batch(val_data, val_labels, batch_size, is_train=False, shuffle=False)
+                length_batch = label[:, 0]
+                digits_batch = label[:, 1:6]
+	
+                acc, update = sess.run([accuracy, update_accuracy], feed_dict = {xs:image_batch, ys1:length_batch, ys2: digits_batch})
+                #print (acc, update)
+            #summary_writer = tf.summary.FileWriter('log/eval')
+            #accuracy_val, summary_val = sess.run([accuracy, summary])
+            #summary_writer.add_summary(summary_val, global_step=global_step)
 
             coord.request_stop()
             coord.join(threads)
 
-    return accuracy_val
+    return acc
 
 
 
-def my_training(train_data, val_data, 
+def my_training(ds, train_data, train_labels, val_data, val_labels,
                 num_train, num_val, conv_featmap=[48,64,128,160,192], fc_units=[84], 
-                conv_kernel_size=[[5,5],[2,2]], pooling_size=[2], l2_norm=0.01,
-                learning_rate=1e-2, batch_size=32, decay =0.9, dropout=0.2, 
+                conv_kernel_size=[[5,5],[2,2]], pooling_size=[2], l2_norm=0.015,
+                learning_rate=1e-2, batch_size=32, decay =0.9, dropout=0.3, 
                 verbose=False, pre_trained_model=None):
     print("Building my SVHN_CNN. Parameters: ")
     print("conv_featmap={}".format(conv_featmap))
@@ -79,18 +105,35 @@ def my_training(train_data, val_data,
     print("learning_rate={}".format(learning_rate))
     #print("decay={}").format(decay)
     #print("dropout").format(dropout)
+    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
     #ds = du.dataset()
-    #train_data, test_data, train_labels, test_labels = ds.load_image([64,64])
+    #train_data, test_data, train_labels, test_labels = ds.load_image([54,54])
 
 
     with tf.Graph().as_default():
+        '''
         image_batch, length_batch, digits_batch = Donkey.build_batch(train_data,
                                                                      num_examples=num_train,
                                                                      batch_size=batch_size,
                                                                      shuffled=True)
-        #batch, label = ds.build_batch(train_data, train_labels, batch_size, True, shuffle=True)
-        length_logtis, digits_logits = Model.layers(image_batch, drop_rate=0.2)
-        loss = Model.loss(length_logtis, digits_logits, length_batch, digits_batch)
+        '''
+        #print (train_data.shape)
+        with tf.name_scope('inputs'):
+            xs = tf.placeholder(shape=[None, 54, 54, 3], dtype=tf.float32)
+            ys1 = tf.placeholder(shape=[None, ], dtype=tf.int32)
+            ys2 = tf.placeholder(shape=[None, 5], dtype=tf.int32)
+        '''
+        image_batch, label = ds.build_batch(train_data, train_labels, batch_size, is_train=True, shuffle=False)
+        length_batch = label[:, 0]
+        digits_batch = label[:, 1:6]
+	
+        print(ds.idx_train)
+        image_batch = tf.convert_to_tensor(image_batch, dtype=tf.float32)
+        length_batch = tf.convert_to_tensor(length_batch, dtype=tf.int32)
+        digits_batch = tf.convert_to_tensor(digits_batch, dtype=tf.int32)	
+        '''
+        length_logtis, digits_logits = Model.layers(xs, drop_rate=0.2)
+        loss = Model.loss(length_logtis, digits_logits, ys1, ys2)
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
         learning_rate = tf.train.exponential_decay(learning_rate, global_step=global_step,
@@ -130,7 +173,15 @@ def my_training(train_data, val_data,
 
             while True:
                 start_time = time.time()
-                _, loss_train, summary_train, global_step_train, learning_rate_train = sess.run([optimizer, loss, merge, global_step, learning_rate])
+                image_batch, label = ds.build_batch(train_data, train_labels, batch_size, is_train=True, shuffle=True)
+                length_batch = label[:, 0]
+                digits_batch = label[:, 1:6]
+	
+                #print(ds.idx_train)
+                #image_batch = tf.convert_to_tensor(image_batch, dtype=tf.float32)
+                #length_batch = tf.convert_to_tensor(length_batch, dtype=tf.int32)
+                #digits_batch = tf.convert_to_tensor(digits_batch, dtype=tf.int32)	
+                _, loss_train, summary_train, global_step_train, learning_rate_train = sess.run([optimizer, loss, merge, global_step, learning_rate], feed_dict={xs:image_batch, ys1:length_batch, ys2:digits_batch})
                 duration += time.time() - start_time
 
                 if global_step_train % 100 == 0:
@@ -146,7 +197,7 @@ def my_training(train_data, val_data,
 
 
                     checkoutfile = saver.save(sess, os.path.join('model/', 'latest.ckpt'))
-                    accuracy = evaluate(checkoutfile, val_data,
+                    accuracy = evaluate(checkoutfile, ds, val_data, val_labels,
                                         
                                         num_val,
                                         global_step_train)
@@ -173,14 +224,17 @@ def my_training(train_data, val_data,
 def main(_):
     train_path = 'data/train.tfrecords'
     val_path = 'data/val.tfrecords'
-    
+    ds = du.dataset()
+    train_data, test_data, train_labels, test_labels = ds.load_image([64,64])
 
 
-    my_training(train_path, val_path, 
+
+
+    my_training(ds, train_data, train_labels, test_data, test_labels, 
                 212052, 23702, conv_featmap=[48,64,128,160,192], fc_units=[84], 
                 conv_kernel_size=[[5,5],[2,2]], pooling_size=[2], l2_norm=0.01,
-                learning_rate=1e-2, batch_size=32, decay =0.9, dropout=0.2, 
-                verbose=False, pre_trained_model=None)
+                learning_rate=2e-2, batch_size=32, decay =0.9, dropout=0.15, 
+                verbose=False, pre_trained_model='model.ckpt-286000')
 
 
 if __name__ == '__main__':
