@@ -1,6 +1,13 @@
 import numpy as np
 import _pickle as pickle
 import h5py
+
+'''
+This function parses the .mat metadata information and transform the metadata into python dict datas structure.
+@param filepath 	the filepath of .mat metadatafile
+@return metadata	the output python dict type metadata
+'''
+
 def get_metadata(filepath):
     f = h5py.File(filepath)
 
@@ -25,7 +32,11 @@ def get_metadata(filepath):
         
     return metadata
 
-
+'''
+This function convert the original vision of metadata into multiple objects data vision. Not used in the training process.
+@param data		original dict data
+@return metadata_dict 	converted data
+'''
 def alter(data):
     metadata_dict = {}
     for i in range(0, len(data['label'])):
@@ -37,7 +48,11 @@ def alter(data):
         metadata_dict[str(i + 1)]['height'] = data['label'][i]
     
     return metadata_dict
-
+'''
+This function extends the original label data, which has a length less than 7, to fixed length 7 labels for training usage.
+@param data 	dict type metadata
+@return data 	label extended metadata
+'''
 def extend_label(data):
     for i in range(0, len(data['label'])):
         data['label'][i].insert(0, len(data['label'][i]))
@@ -45,7 +60,12 @@ def extend_label(data):
             data['label'][i].append(10)
     
     return data
+'''
+This function get the border of all the bounding boxes for one image in metadata and merges all boxes into one which contains all digits in a image. The merged bounding box has 30% extended range for sampling random shifting training images.
+@param metadata 	metadata dict
+@return ret 		merged bounding boxes
 
+'''
 def get_digit_border(metadata):
     ret = []
     for i in range(0, len(metadata['label'])):

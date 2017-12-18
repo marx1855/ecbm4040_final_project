@@ -12,15 +12,25 @@ import json
 
 class dataset:
     def __init__(self):
+        ##############################
+        #class initilazation function#
+        ##############################
         self.train_image_path = "./data/train/"
         self.test_image_path = "./data/test/"
-        self.idx_train = 0
-        self.idx_test = 0
-        self.rand_idx_train = np.random.permutation(33402)
-        self.rand_idx_test = np.random.permutation(13068)
+        self.idx_train = 0	#train dataset index pointer for batch
+        self.idx_test = 0	#test dataset index pointer for batch
+        self.rand_idx_train = np.random.permutation(33402) #shuffle index pemutation
+        self.rand_idx_test = np.random.permutation(13068)  #shuffle index permutation
+    '''
+    #This function is used for data batch(test and train)#
+    #@param data original 64 * 64 size datasset, can be train or test dataset
+    #@param label original 7 size label set, can be train or test label set
+    #@param batch_size the size of batch this function return
+    #@param is_train indicates whether the data is train dataset or test dataset
+    #@param shuffle controls whether the order of data returned is shuffled or not, default is Flase
+    #@return a batch of images and labels with given batch size
+    '''
     def build_batch(self, data, labels, batch_size, is_train, shuffle=False):
-        
-        
         rand_idx_train = self.rand_idx_train
         rand_idx_test = self.rand_idx_test
         
@@ -79,7 +89,9 @@ class dataset:
                     label = labels[rand_idx_test[idx:idx + batch_size]]
                     self.idx_test = idx + batch_size
 
-        
+        '''
+        crop a random shifted 54 * 54 size image out of the original 64 * 64 size image as stated in the papaer
+        '''
         cropped = np.zeros((batch_size, 54, 54, 3))
         if is_train is True:
             for i in range(batch_size):
@@ -90,7 +102,14 @@ class dataset:
         return cropped, label
                 
                                
-        
+    '''
+    #This function loads the JSON format metadat information(or output the metadata information files if they are not existed) and train/test dataset in given path.
+    @param size the reshape size of image stored in memory
+    @return train_image 33402*64*64*3 numpy array of all train images
+    @return train_label 33402*7 numpyarray of all train labels
+    @return test_image 13068*64*64*3 numpy array of all test images
+    @return test_label 13068*7 numpy array of all test labels
+    '''
     def load_image(self, size):
         train_image_path = self.train_image_path
         test_image_path = self.test_image_path
@@ -154,6 +173,7 @@ class dataset:
             if i % 1000 is 0 or i == 13068:
                 print (str(i) + "/" + str(13068))
             try:
+                #Load the image using skimage package
                 image = imageio.imread(test_image_path + str(i) + ".png")
                 chop_image = image[meta_test[i - 1][0]:meta_test[i - 1][1], meta_test[i - 1][2]:meta_test[i - 1][3]]
                 '''
